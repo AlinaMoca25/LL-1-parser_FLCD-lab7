@@ -49,29 +49,3 @@ C -> c C
 C -> epsilon
 ```
 
-Linking with your GitHub repo
-Use these PowerShell commands in the project root. They initialize a local repo (if you haven't already), commit, set the remote, and push to GitHub.
-
-If you have NOT initialized a git repo locally yet:
-```powershell
-git init; 
-git add .; 
-git commit -m "Initial commit"; 
-git branch -M main; 
-git remote add origin https://github.com/AlinaMoca25/LL-1-parser_FLCD-lab7.git; 
-git push -u origin main
-```
-
-If you already have a remote named `origin` and want to change it:
-```powershell
-git remote set-url origin https://github.com/AlinaMoca25/LL-1-parser_FLCD-lab7.git; 
-git push -u origin main
-```
-
-Notes
-- If GitHub repo is empty, `git push -u origin main` will create the remote branch.
-- If the remote has commits and you need to pull first, run `git pull --rebase origin main` and resolve conflicts before pushing.
-- If you want the FIRST table saved in a different format (JSON, CSV, or as a C header), I can add that.
-
-License & attribution
-- This is a small lab helper; add a license file if you want to publish publicly.

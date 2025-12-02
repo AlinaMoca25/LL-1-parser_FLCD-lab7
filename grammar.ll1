@@ -1,0 +1,35 @@
+# LL(1) grammar derived from the user's productions
+
+# Nonterminals: S, B, C
+# Terminals: a, b, c, d
+# Start symbol: S
+
+# Productions:
+S -> B b
+S -> C d
+
+B -> a B
+B -> epsilon
+
+C -> c C
+C -> epsilon
+
+# Notes (FIRST / FOLLOW and why it's LL(1))
+# FIRST sets:
+# FIRST(B) = { a, epsilon }
+# FIRST(C) = { c, epsilon }
+# FIRST(S -> B b) = FIRST(B) without epsilon plus b if B -> epsilon => { a, b }
+# FIRST(S -> C d) = FIRST(C) without epsilon plus d if C -> epsilon => { c, d }
+
+# The FIRST sets for S's two alternatives are {a, b} and {c, d} respectively — disjoint.
+# Therefore there is no FIRST/FIRST conflict for S.
+
+# B's productions: FIRST(a B) = { a }, FIRST(epsilon) = { epsilon } => OK.
+# C's productions: FIRST(c C) = { c }, FIRST(epsilon) = { epsilon } => OK.
+
+# FOLLOW (useful for building parse table):
+# FOLLOW(S) = { $ } (end of input)
+# FOLLOW(B): appears in S -> B b so FOLLOW(B) contains b. Also if S is start then not directly, so FOLLOW(B) = { b }.
+# FOLLOW(C): appears in S -> C d so FOLLOW(C) contains d. So FOLLOW(C) = { d }.
+
+# Conclusion: This grammar is LL(1). You can use these productions as input to your LL(1) parser algorithm.

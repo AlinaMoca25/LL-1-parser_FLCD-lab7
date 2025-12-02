@@ -1,0 +1,9 @@
+# Test grammar provided by user
+# Nonterminals: S A B C D
+# Terminals: a, (, ), *
+
+S -> B A
+A -> + B A | epsilon
+B -> D C
+C -> * D C | epsilon
+D -> ( S ) | a

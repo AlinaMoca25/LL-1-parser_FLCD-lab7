@@ -194,7 +194,6 @@ ParseOutput ll1_parse(const char *input, int **table, StrList *nonterms, StrList
     
     int go = 1;
     const char *s = NULL;
-    int step = 0;
     
     while (go) {
         const char *beta_head = head(&config.beta);
@@ -207,7 +206,6 @@ ParseOutput ll1_parse(const char *input, int **table, StrList *nonterms, StrList
         }
         
         int table_val = table_lookup(table, nonterms, terms, beta_head, alpha_head);
-        
         
         if (table_val >= 0) {
             // Production: Push action

@@ -50,9 +50,6 @@ int action_pop(Configuration *config);
 // Returns ParseOutput with result and productions/error info
 ParseOutput ll1_parse(const char *input, int **table, StrList *nonterms, StrList *terms, ProdList *prods);
 
-// Main LL(1) parsing algorithm with verbose debug output
-ParseOutput ll1_parse_verbose(const char *input, int **table, StrList *nonterms, StrList *terms, ProdList *prods);
-
 // Print parse output
 void print_parse_output(ParseOutput *output, ProdList *prods);
 

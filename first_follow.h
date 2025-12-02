@@ -42,6 +42,7 @@ void compute_follow(StrList *nonterms, StrList *terms, ProdList *prods, FirstTab
 // Helpers for StrList and ProdList (implementations may exist in first_follow.c)
 void sl_init(StrList *s);
 void sl_free(StrList *s);
+void sl_add(StrList *s, const char *str);
 int sl_index(StrList *s, const char *str);
 
 void pl_init(ProdList *p);

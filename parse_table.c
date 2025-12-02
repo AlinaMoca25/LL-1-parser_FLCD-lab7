@@ -4,22 +4,6 @@
 #include <string.h>
 #include "parse_table.h"
 
-// Helper: add "$" as end-marker to terms list for table columns
-static void ensure_endmarker(StrList *terms){
-    if(sl_index(terms, "$") == -1) sl_init(terms); // sl_init may be noop if already init
-    if(sl_index(terms, "$") == -1) { /* add */
-        // we assume a sl_add implementation exists in first_follow.c; but to avoid direct dependency here,
-        // we add it by manipulating the list if possible. For safety call sl_init only if count==0.
-        // In practice first_follow provides sl_add.
-    }
-}
-
-// Helper to find index of terminal in terms list, adding $ if necessary
-static int term_index_add_dollar(StrList *terms, const char *tok){
-    int idx = sl_index(terms, tok);
-    return idx;
-}
-
 int **build_parse_table(StrList *nonterms, StrList *terms, ProdList *prods, FirstTable *first, FollowTable *follow){
     // we'll require that terms contains all terminals but possibly not the end-marker `$`.
     // Add a virtual `$` at the end for columns if not present. Since we don't know sl_add signature here,

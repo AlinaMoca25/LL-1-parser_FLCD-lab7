@@ -17,12 +17,7 @@ int main(int argc, char **argv){
 
     // ensure end-marker $ present in terms
     if(sl_index(&terms, "$") == -1){
-        // naive add: reuse sl_add if the implementation provides it; otherwise fallback
-        // We assume first_follow.c will provide sl_add; here we attempt to use sl_index only.
-        // If $ is missing, add a string into the terms array directly if possible.
-        // Fallback: print a note and exit.
-        fprintf(stderr, "Please ensure '$' is present in the terminals list (add it to grammar file or implementation).\n");
-        // We'll still append logically by expanding the in-memory array if possible.
+        sl_add(&terms, "$");
     }
 
     FirstTable first; compute_first(&nonterms, &terms, &prods, &first);

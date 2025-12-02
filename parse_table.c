@@ -38,21 +38,63 @@ int **build_parse_table(StrList *nonterms, StrList *terms, ProdList *prods, Firs
     }
 
     // For nonterminal rows: fill according to algorithm
+    // First pass: process productions that start with terminals (higher priority)
+    for(int p=0;p<prods->count;p++){
+        Production *prod = &prods->items[p];
+        if(prod->rhs_len == 0) continue;
+        
+        // Check if production starts with a terminal
+        char *first_sym = prod->rhs[0];
+        int nt_idx = sl_index(nonterms, first_sym);
+        if(nt_idx == -1){
+            // Starts with terminal - process this first (higher priority)
+            int col = sl_index(terms, first_sym);
+            if(col != -1){
+                // Only set if not already set (preserve first match)
+                if(table[prod->lhs][col] == PT_ERROR){
+                    table[prod->lhs][col] = p;
+                }
+            }
+        }
+    }
+    
+    // Second pass: process all productions normally
     for(int p=0;p<prods->count;p++){
         Production *prod = &prods->items[p];
         // compute FIRST(alpha) for RHS alpha
-        // We'll collect terminals in a temporary set using StrList-like behavior (but simply mark via array)
+        // Check if this is an epsilon production first
+        int is_epsilon_prod = (prod->rhs_len == 0 || (prod->rhs_len == 1 && (strcmp(prod->rhs[0], "epsilon") == 0 || strcmp(prod->rhs[0], "ε") == 0)));
+        
+        if(is_epsilon_prod){
+            // Epsilon production: set entries for all terminals in FOLLOW(A)
+            StrList *fA = &follow->sets[prod->lhs];
+            for(int t=0;t<fA->count;t++){
+                int col = sl_index(terms, fA->items[t]);
+                if(col==-1) continue;
+                // Always set epsilon production entries
+                table[prod->lhs][col] = p;
+            }
+            continue; // Skip to next production
+        }
+        
+        // Non-epsilon production: compute FIRST(alpha)
         int produces_epsilon = 1;
         // iterate symbols
         for(int k=0;k<prod->rhs_len;k++){
             char *X = prod->rhs[k];
             int nt_idx = sl_index(nonterms, X);
             if(nt_idx == -1){
-                // X is terminal
+                // X is terminal (or epsilon token)
+                if(strcmp(X, "epsilon") == 0 || strcmp(X, "ε") == 0){
+                    // Epsilon token - continue to next symbol (or end, making produces_epsilon = 1)
+                    continue;
+                }
                 int col = sl_index(terms, X);
                 if(col==-1) continue; // unknown terminal
-                // set table[A, X] = prod_index
-                table[prod->lhs][col] = p;
+                // set table[A, X] = prod_index (only if not already set by terminal-first pass)
+                if(table[prod->lhs][col] == PT_ERROR){
+                    table[prod->lhs][col] = p;
+                }
                 produces_epsilon = 0;
                 break;
             } else {
@@ -63,7 +105,10 @@ int **build_parse_table(StrList *nonterms, StrList *terms, ProdList *prods, Firs
                     if(strcmp(sx->items[t], "epsilon")==0) { had_eps = 1; continue; }
                     int col = sl_index(terms, sx->items[t]);
                     if(col==-1) continue;
-                    table[prod->lhs][col] = p;
+                    // Only set if not already set (preserve terminal-first matches)
+                    if(table[prod->lhs][col] == PT_ERROR){
+                        table[prod->lhs][col] = p;
+                    }
                 }
                 if(!had_eps){ produces_epsilon = 0; break; }
                 // else continue to next symbol
@@ -71,10 +116,12 @@ int **build_parse_table(StrList *nonterms, StrList *terms, ProdList *prods, Firs
         }
         if(produces_epsilon){
             // for each b in FOLLOW(A) set table[A,b] = prod
+            // Epsilon productions should always be set (even if there's a conflict)
             StrList *fA = &follow->sets[prod->lhs];
             for(int t=0;t<fA->count;t++){
                 int col = sl_index(terms, fA->items[t]);
                 if(col==-1) continue;
+                // Always set epsilon production entries (don't check PT_ERROR)
                 table[prod->lhs][col] = p;
             }
         }

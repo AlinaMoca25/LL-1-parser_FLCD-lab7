@@ -1,0 +1,84 @@
+# FlowCalculation Mini-DSL Grammar (LL(1) format)
+# Start symbol: program
+
+# Productions (left recursion eliminated for LL(1))
+
+# Program
+program -> stmt program_tail
+program_tail -> NL stmt program_tail | epsilon
+
+# Statements
+stmt -> bind_stmt | set_stmt | when_stmt | each_stmt | def_stmt | yield_stmt | expr
+
+bind_stmt -> BIND id ASSIGN expr
+set_stmt -> SET id UPDATE expr
+when_stmt -> WHEN expr DO block otherwise_opt END
+otherwise_opt -> OTHERWISE DO block | epsilon
+each_stmt -> EACH id IN expr DO block END
+def_stmt -> DEF id LPAREN param_list_opt RPAREN DO block END
+yield_stmt -> YIELD expr
+
+# Block
+block -> stmt block_tail
+block_tail -> NL stmt block_tail | epsilon
+
+# Parameter list
+param_list_opt -> id param_list_tail | epsilon
+param_list_tail -> COMMA id param_list_tail | epsilon
+
+# Expression hierarchy (left recursion eliminated)
+expr -> pipe_expr
+
+pipe_expr -> logic_or pipe_expr_tail
+pipe_expr_tail -> PIPELINE stage pipe_expr_tail | epsilon
+
+stage -> call | stage_keyword
+
+stage_keyword -> APPLY LPAREN lambda RPAREN | KEEP LPAREN lambda RPAREN | ORDER LPAREN order_kw RPAREN | DEDUPE LPAREN RPAREN | TAKE LPAREN expr RPAREN | SKIP LPAREN expr RPAREN | CONCAT LPAREN expr RPAREN | JOINSTR LPAREN expr RPAREN | TOTAL LPAREN RPAREN | COUNT LPAREN RPAREN | AVG LPAREN RPAREN
+
+order_kw -> ASC | DESC
+
+logic_or -> logic_and logic_or_tail
+logic_or_tail -> OR logic_and logic_or_tail | epsilon
+
+logic_and -> equality logic_and_tail
+logic_and_tail -> AND equality logic_and_tail | epsilon
+
+equality -> relation equality_tail
+equality_tail -> EQ relation equality_tail | NE relation equality_tail | epsilon
+
+relation -> add relation_tail
+relation_tail -> LT add relation_tail | LE add relation_tail | GT add relation_tail | GE add relation_tail | epsilon
+
+add -> mul add_tail
+add_tail -> PLUS mul add_tail | MINUS mul add_tail | epsilon
+
+mul -> unary mul_tail
+mul_tail -> MUL unary mul_tail | DIV unary mul_tail | MOD unary mul_tail | epsilon
+
+unary -> NOT unary | MINUS unary | power
+
+power -> primary power_tail
+power_tail -> POW unary power_tail | epsilon
+
+primary -> number | string | bool | NONE | id | LPAREN expr RPAREN | call | list_lit | range_lit | lambda
+
+call -> id LPAREN arg_list_opt RPAREN
+
+arg_list_opt -> expr arg_list_tail | epsilon
+arg_list_tail -> COMMA expr arg_list_tail | epsilon
+
+lambda -> id LAMBDA expr
+
+list_lit -> LBRACKET expr_list_opt RBRACKET
+
+expr_list_opt -> expr expr_list_tail | epsilon
+expr_list_tail -> COMMA expr expr_list_tail | epsilon
+
+range_lit -> expr RANGE_DOT expr | expr RANGE_DOT_LT expr
+
+# Terminals
+id -> IDENTIFIER
+number -> NUMBER
+string -> STRING
+bool -> BOOL_LIT

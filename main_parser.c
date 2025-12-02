@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     
-    // Print parse table (optional, for debugging)
+    // Print parse table (optional)
     // print_parse_table(table, &nonterms, &terms);
     
     // Parse the input sequence

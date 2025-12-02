@@ -1,6 +1,6 @@
 // LL1.c
 // Simple tool to load a whitespace-separated grammar file (see grammar.ll1)
-// and compute FIRST sets for all nonterminals.
+// and compute FIRST and FOLLOW sets for all nonterminals.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +49,11 @@ typedef struct {
     StrList *sets; // parallel array, length = number of nonterminals
 } FirstTable;
 
+// Set of strings per nonterminal representing FOLLOW set
+typedef struct {
+    StrList *sets; // parallel array, length = number of nonterminals
+} FollowTable;
+
 int is_epsilon_token(const char *t){ return strcmp(t,"epsilon")==0 || strcmp(t,"ε")==0; }
 
 // add token to FIRST set for nonterminal index nt
@@ -63,6 +68,21 @@ int first_add(FirstTable *ft, int nt, const char *tok){
 // helper: remove epsilon presence check
 int first_contains(FirstTable *ft, int nt, const char *tok){
     StrList *s = &ft->sets[nt];
+    for(int i=0;i<s->count;i++) if(strcmp(s->items[i],tok)==0) return 1; return 0;
+}
+
+// add token to FOLLOW set for nonterminal index nt
+int follow_add(FollowTable *fot, int nt, const char *tok){
+    StrList *s = &fot->sets[nt];
+    // if already present return 0
+    for(int i=0;i<s->count;i++) if(strcmp(s->items[i],tok)==0) return 0;
+    sl_add(s,tok);
+    return 1;
+}
+
+// helper: check if FOLLOW set contains token
+int follow_contains(FollowTable *fot, int nt, const char *tok){
+    StrList *s = &fot->sets[nt];
     for(int i=0;i<s->count;i++) if(strcmp(s->items[i],tok)==0) return 1; return 0;
 }
 
@@ -207,11 +227,134 @@ void compute_first(StrList *nonterms, StrList *terms, ProdList *prods, FirstTabl
     }
 }
 
+// forward declaration
+static int first_of_sequence(char **seq, int seq_len, StrList *nonterms, FirstTable *ft, StrList *result_strlist);
+
+// compute FOLLOW sets (requires FIRST sets to be computed first)
+void compute_follow(StrList *nonterms, StrList *terms, ProdList *prods, FirstTable *ft, FollowTable *fot, int start_symbol_idx){
+    // init FOLLOW table lists
+    fot->sets = malloc(sizeof(StrList)*nonterms->count);
+    for(int i=0;i<nonterms->count;i++) sl_init(&fot->sets[i]);
+    
+    // Initialize: FOLLOW(S) = {$}, FOLLOW(A) = ∅ for all other A
+    follow_add(fot, start_symbol_idx, "$");
+    
+    int changed = 1;
+    while(changed){
+        changed = 0;
+        // For each production A → αBγ
+        for(int pi=0; pi<prods->count; pi++){
+            Production *pr = &prods->items[pi];
+            int A = pr->lhs; // left-hand side
+            
+            // For each position in RHS where we have a nonterminal B
+            for(int k=0; k<pr->rhs_len; k++){
+                char *B = pr->rhs[k];
+                int Bidx = sl_index(nonterms, B);
+                
+                // Skip if B is not a nonterminal (it's a terminal)
+                if(Bidx == -1) continue;
+                
+                // Check what follows B in this production
+                // If B is at position k, then γ starts at position k+1
+                if(k+1 < pr->rhs_len){
+                    // B is followed by something - compute FIRST(γ)
+                    StrList first_gamma;
+                    sl_init(&first_gamma);
+                    int gamma_nullable = first_of_sequence(&pr->rhs[k+1], pr->rhs_len - k - 1, nonterms, ft, &first_gamma);
+                    
+                    // Add FIRST(γ) \ {epsilon} to FOLLOW(B)
+                    for(int t=0; t<first_gamma.count; t++){
+                        if(!follow_contains(fot, Bidx, first_gamma.items[t])){
+                            follow_add(fot, Bidx, first_gamma.items[t]);
+                            changed = 1;
+                        }
+                    }
+                    
+                    // If ε ∈ FIRST(γ), add FOLLOW(A) to FOLLOW(B)
+                    if(gamma_nullable){
+                        StrList *foa = &fot->sets[A];
+                        for(int t=0; t<foa->count; t++){
+                            if(!follow_contains(fot, Bidx, foa->items[t])){
+                                follow_add(fot, Bidx, foa->items[t]);
+                                changed = 1;
+                            }
+                        }
+                    }
+                    
+                    sl_free(&first_gamma);
+                } else {
+                    // B is at the end of production A → αB
+                    // Add FOLLOW(A) to FOLLOW(B)
+                    StrList *foa = &fot->sets[A];
+                    for(int t=0; t<foa->count; t++){
+                        if(!follow_contains(fot, Bidx, foa->items[t])){
+                            follow_add(fot, Bidx, foa->items[t]);
+                            changed = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// helper: compute FIRST of a sequence of symbols (for FOLLOW computation)
+// returns 1 if sequence is nullable (can derive epsilon), 0 otherwise
+// adds terminals to result_strlist (excluding epsilon)
+static int first_of_sequence(char **seq, int seq_len, StrList *nonterms, FirstTable *ft, StrList *result_strlist){
+    if(seq_len == 0) return 1; // empty sequence is nullable
+    int all_nullable = 1;
+    for(int i=0; i<seq_len; i++){
+        char *X = seq[i];
+        // if X is terminal
+        if(sl_index(nonterms, X) == -1){
+            // terminal - add it and stop
+            if(!is_epsilon_token(X)){
+                sl_add(result_strlist, X);
+            }
+            all_nullable = 0;
+            break;
+        } else {
+            // nonterminal - add FIRST(X) \ {epsilon}
+            int Xidx = sl_index(nonterms, X);
+            StrList *sx = &ft->sets[Xidx];
+            int had_epsilon = 0;
+            for(int t=0; t<sx->count; t++){
+                if(is_epsilon_token(sx->items[t])){
+                    had_epsilon = 1;
+                    continue;
+                }
+                sl_add(result_strlist, sx->items[t]);
+            }
+            if(!had_epsilon){
+                all_nullable = 0;
+                break;
+            }
+            // else continue to next symbol
+        }
+    }
+    return all_nullable;
+}
+
 void print_first(FirstTable *ft, StrList *nonterms){
     printf("FIRST sets:\n");
     for(int i=0;i<nonterms->count;i++){
         printf("FIRST(%s) = { ", nonterms->items[i]);
         StrList *s = &ft->sets[i];
+        for(int j=0;j<s->count;j++){
+            printf("%s", s->items[j]);
+            if(j+1 < s->count) printf(", ");
+        }
+        printf(" }\n");
+    }
+}
+
+void print_follow(FollowTable *fot, StrList *nonterms){
+    printf("FOLLOW sets:\n");
+    for(int i=0;i<nonterms->count;i++){
+        printf("FOLLOW(%s) = { ", nonterms->items[i]);
+        StrList *s = &fot->sets[i];
         for(int j=0;j<s->count;j++){
             printf("%s", s->items[j]);
             if(j+1 < s->count) printf(", ");
@@ -249,6 +392,20 @@ void save_first(const char *path, FirstTable *ft, StrList *nonterms){
     fclose(f);
 }
 
+void save_follow(const char *path, FollowTable *fot, StrList *nonterms){
+    FILE *f = fopen(path,"w"); if(!f){ perror("fopen"); return; }
+    for(int i=0;i<nonterms->count;i++){
+        fprintf(f, "%s ->", nonterms->items[i]);
+        StrList *s = &fot->sets[i];
+        for(int j=0;j<s->count;j++){
+            fprintf(f, " %s", s->items[j]);
+            if(j+1 < s->count) fprintf(f, ",");
+        }
+        fprintf(f, "\n");
+    }
+    fclose(f);
+}
+
 int main(int argc, char **argv){
     const char *grammar_path = "grammar.ll1";
     int save = 0;
@@ -271,8 +428,16 @@ int main(int argc, char **argv){
     print_first(&ft, &nonterms);
     if(save) save_first("first_table.txt", &ft, &nonterms);
 
+    // Compute FOLLOW sets (start symbol is first nonterminal, index 0)
+    FollowTable fot;
+    int start_symbol_idx = 0;
+    compute_follow(&nonterms, &terms, &prods, &ft, &fot, start_symbol_idx);
+    print_follow(&fot, &nonterms);
+    if(save) save_follow("follow_table.txt", &fot, &nonterms);
+
     // cleanup
     for(int i=0;i<nonterms.count;i++) sl_free(&ft.sets[i]); free(ft.sets);
+    for(int i=0;i<nonterms.count;i++) sl_free(&fot.sets[i]); free(fot.sets);
     sl_free(&nonterms); sl_free(&terms); pl_free(&prods);
     return 0;
 }

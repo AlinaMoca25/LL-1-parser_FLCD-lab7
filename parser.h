@@ -30,7 +30,7 @@ typedef struct {
 } ParseOutput;
 
 // Initialize configuration: (w$, S$, ε)
-void config_init(Configuration *config, const char *input, StrList *nonterms);
+void config_init(Configuration *config, const char *input, StrList *nonterms, StrList *terms);
 
 // Free configuration resources
 void config_free(Configuration *config);

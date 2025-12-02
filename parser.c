@@ -19,8 +19,35 @@ static void add_token_allow_dup(StrList *s, const char *str) {
     s->count++;
 }
 
-// Helper: split input string into tokens (space-separated)
-static StrList split_input(const char *input) {
+// Helper: check if a string starts with a given terminal
+static int starts_with_terminal(const char *str, const char *terminal) {
+    int term_len = strlen(terminal);
+    if (strlen(str) < term_len) return 0;
+    return strncmp(str, terminal, term_len) == 0;
+}
+
+// Helper: find the longest matching terminal at the current position
+static const char *find_longest_terminal(const char *input, StrList *terms) {
+    const char *best_match = NULL;
+    int best_len = 0;
+    
+    for (int i = 0; i < terms->count; i++) {
+        const char *term = terms->items[i];
+        // Skip $ as it's not part of input
+        if (strcmp(term, "$") == 0) continue;
+        
+        int term_len = strlen(term);
+        if (starts_with_terminal(input, term) && term_len > best_len) {
+            best_match = term;
+            best_len = term_len;
+        }
+    }
+    
+    return best_match;
+}
+
+// Helper: split input string into tokens (handles both space-separated and non-space-separated)
+static StrList split_input(const char *input, StrList *terms) {
     StrList tokens;
     sl_init(&tokens);
     
@@ -28,25 +55,24 @@ static StrList split_input(const char *input) {
         return tokens;
     }
     
-    // Manual parsing to avoid strtok issues
     const char *p = input;
     while (*p) {
-        // Skip whitespace
+        // Skip whitespace (still allow spaces for backward compatibility)
         while (*p && (isspace((unsigned char)*p))) p++;
         if (!*p) break;
         
-        // Find token end
-        const char *start = p;
-        while (*p && !isspace((unsigned char)*p)) p++;
+        // Try to match a terminal
+        const char *matched_term = find_longest_terminal(p, terms);
         
-        // Extract token
-        int len = p - start;
-        if (len > 0) {
-            char *token = malloc(len + 1);
-            memcpy(token, start, len);
-            token[len] = '\0';
-            add_token_allow_dup(&tokens, token); // Allow duplicates for input tokens
-            free(token);
+        if (matched_term) {
+            // Found a matching terminal
+            add_token_allow_dup(&tokens, matched_term);
+            p += strlen(matched_term);
+        } else {
+            // No terminal matches - take single character (fallback for unknown tokens)
+            char single_char[2] = {*p, '\0'};
+            add_token_allow_dup(&tokens, single_char);
+            p++;
         }
     }
     
@@ -54,9 +80,9 @@ static StrList split_input(const char *input) {
 }
 
 // Initialize configuration: (w$, S$, ε)
-void config_init(Configuration *config, const char *input, StrList *nonterms) {
+void config_init(Configuration *config, const char *input, StrList *nonterms, StrList *terms) {
     // Initialize alpha = w$ (input stack)
-    config->alpha = split_input(input);
+    config->alpha = split_input(input, terms);
     // Add $ to alpha if not already present
     if (sl_index(&config->alpha, "$") == -1) {
         sl_add(&config->alpha, "$");
@@ -190,7 +216,7 @@ ParseOutput ll1_parse(const char *input, int **table, StrList *nonterms, StrList
     output.error_location = NULL;
     
     Configuration config;
-    config_init(&config, input, nonterms);
+    config_init(&config, input, nonterms, terms);
     
     int go = 1;
     const char *s = NULL;

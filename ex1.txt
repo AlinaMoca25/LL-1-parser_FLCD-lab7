@@ -1,0 +1,16 @@
+begin {
+	s1: string;
+	"abc" -> s1;
+	s2, res: string;
+	input s2;
+	words: list;
+	split s2 -> words;
+	replace "e" with "3" in words;
+	replace "o" with "00" in words(1) -> hello: string;
+	rotate words with 2 positions left;
+	if words ends with "!" { capitalize words; }
+	if words(3) contains "i" { upper words(3); }
+	join words with s1 -> res;
+	hello + res + s1 -> res;
+	send res;
+}

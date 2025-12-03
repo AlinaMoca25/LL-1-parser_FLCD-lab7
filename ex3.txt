@@ -1,0 +1,14 @@
+begin p1 {
+	message, new_message: string;
+	input message;
+	tokens: list;
+	split message by "-" -> tokens;
+	"aeiou" -> vowels;
+	"0123456789" -> digits;
+	if tokens.each starts with vowels {
+		if it contains digits { it - digits; }
+		insert "0" into it(0); 
+	};
+	join tokens with "-" -> new_message;
+	send new_message;
+}

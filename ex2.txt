@@ -1,0 +1,8 @@
+begin {
+	message: number;
+	input s2;
+	split "s2" by " " -> new: list;
+	if list.each starts with "a" { it upper; }
+	join new with "." -> message;
+	send message;
+}

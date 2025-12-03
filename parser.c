@@ -226,9 +226,23 @@ ParseOutput ll1_parse(const char *input, int **table, StrList *nonterms, StrList
             go = 0;
             s = "acc";
         } else {
-            // Error
-            go = 0;
-            s = "err";
+                // Error -- print debug info: what's on beta and what terminals are expected
+                printf("\n[DEBUG] Parse error: beta_head='%s' alpha_head='%s'\n", beta_head ? beta_head : "(null)", alpha_head ? alpha_head : "(null)");
+                // If beta_head is nonterminal, show which terminals have table entries
+                int nt_idx = sl_index(nonterms, beta_head);
+                if(nt_idx != -1){
+                    printf("[DEBUG] Expected tokens for nonterminal %s:\n", beta_head);
+                    for(int t=0;t<terms->count;t++){
+                        int tv = table[nt_idx][t];
+                        if(tv == PT_POP) printf("  %s -> POP\n", terms->items[t]);
+                        else if(tv == PT_ACCEPT) printf("  %s -> ACCEPT\n", terms->items[t]);
+                        else if(tv >= 0) printf("  %s -> prod %d\n", terms->items[t], tv);
+                    }
+                } else {
+                    printf("[DEBUG] beta_head is terminal or unknown.\n");
+                }
+                go = 0;
+                s = "err";
         }
     }
     

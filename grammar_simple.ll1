@@ -1,0 +1,21 @@
+S -> begin { L }
+S -> begin id { L }
+
+L -> S L
+L -> epsilon
+
+S -> definition ;
+S -> expression ;
+
+definition -> id : type
+
+id -> IDENTIFIER
+
+type -> string
+type -> list
+
+expression -> split
+expression -> replace
+
+split -> split IDENTIFIER
+replace -> replace STRING

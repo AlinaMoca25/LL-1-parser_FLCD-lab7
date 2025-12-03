@@ -1,0 +1,113 @@
+/* 1. Program Structure */
+program -> BEGIN_PROG program_tail
+program_tail -> '{' statement_list '}'
+program_tail -> IDENTIFIER_TOKEN '{' statement_list '}'
+
+/* 2. Statement List (Right Recursive) */
+statement_list -> statement statement_list
+statement_list -> epsilon
+
+/* 3. Statements (Factored for LL(1)) */
+/* The complexity here is handling 'id' which can start a definition, assignment, or expression */
+
+statement -> id statement_id_tail
+statement -> STRING_LITERAL_TOKEN statement_string_tail
+statement -> if_statement
+statement -> input ';'
+statement -> send ';'
+statement -> split_expr_stmt
+statement -> join_expr_stmt
+statement -> replace_expr_stmt
+statement -> rotate_expr_stmt
+statement -> insert_expr_stmt
+statement -> capitalize_stmt
+statement -> upper_stmt
+statement -> lower_stmt
+statement -> ';'
+
+/* 3a. Handling the ID conflict (Lookahead determines path) */
+statement_id_tail -> ',' id_list_tail ':' type ';'      /* path: definition */
+statement_id_tail -> ':' type ';'                       /* path: definition */
+statement_id_tail -> ARROW assignment_target            /* path: assignment (id -> ...) */
+statement_id_tail -> '+' concat_tail ';'                /* path: expression (concatenation) */
+statement_id_tail -> '-' value ';'                      /* path: expression (remove) */
+statement_id_tail -> ';'                                /* path: expression (just a value) */
+
+/* 3b. Handling String Literal conflict */
+statement_string_tail -> ARROW assignment_target        /* path: assignment (string -> ...) */
+statement_string_tail -> '-' value ';'                  /* path: expression (remove) */
+statement_string_tail -> ';'                            /* path: expression (just a value) */
+
+/* 4. Definitions */
+/* Note: The 'id' part is consumed by the statement rule above */
+id_list_tail -> ',' id id_list_tail
+id_list_tail -> epsilon
+
+/* 5. Assignment Helpers */
+assignment_target -> id assignment_target_tail ';'
+assignment_target_tail -> ':' type
+assignment_target_tail -> epsilon
+
+/* 6. Expression Statements (Wrapped with semicolon) */
+split_expr_stmt -> split_expr ';'
+join_expr_stmt -> join_expr ';'
+replace_expr_stmt -> replace_expr ';'
+rotate_expr_stmt -> rotate_expr ';'
+insert_expr_stmt -> insert_expr ';'
+capitalize_stmt -> capitalize ';'
+upper_stmt -> upper ';'
+lower_stmt -> lower ';'
+
+/* 7. Specific Expression Rules */
+/* These start with unique keywords, so they are safe */
+
+split_expr -> SPLIT value split_tail
+split_tail -> BY value
+split_tail -> epsilon
+
+join_expr -> JOIN value WITH value
+
+replace_expr -> REPLACE value WITH value IN id
+
+rotate_expr -> ROTATE id WITH NUMBER_TOKEN POSITIONS direction
+
+insert_expr -> INSERT value INTO value
+
+capitalize -> CAPITALIZE value
+upper -> UPPER value
+lower -> LOWER value
+
+/* Concatenation Tail (After 'id +') */
+concat_tail -> id concat_tail_prime
+concat_tail_prime -> '+' concat_tail
+concat_tail_prime -> epsilon
+
+/* 8. Control Flow */
+if_statement -> IF value condition value '{' statement_list '}'
+
+condition -> CONTAINS
+condition -> STARTS WITH
+condition -> ENDS WITH
+
+/* 9. Input / Output */
+input -> INPUT id
+send -> SEND id
+
+/* 10. Types and Values */
+type -> STRING_TYPE
+type -> LIST_TYPE
+
+direction -> LEFT
+direction -> RIGHT
+
+/* 11. ID and Value (Recursion Removed) */
+value -> id
+value -> STRING_LITERAL_TOKEN
+
+id -> id_base id_tail
+id_base -> IDENTIFIER_TOKEN
+id_base -> IT
+
+id_tail -> EACH id_tail
+id_tail -> '(' NUMBER_TOKEN ')' id_tail
+id_tail -> epsilon

@@ -1,0 +1,65 @@
+/* stringDSL Grammar - Fixed to match PIF tokens */
+
+program -> begin lbrace statement_list rbrace
+
+statement_list -> statement statement_list
+statement_list -> epsilon
+
+/* Statements */
+statement -> id statement_id_tail
+statement -> STRING statement_string_tail
+statement -> if_statement
+statement -> input id semicolon
+statement -> send id semicolon
+statement -> split_expr_stmt
+statement -> join_expr_stmt
+statement -> replace_expr_stmt
+statement -> rotate_expr_stmt
+statement -> capitalize_stmt
+statement -> upper_stmt
+statement -> lower_stmt
+statement -> semicolon
+
+/* ID Tail: handle `:` vs `+` vs `->` vs `;` */
+statement_id_tail -> comma id_list_tail colon type semicolon
+statement_id_tail -> colon type semicolon
+statement_id_tail -> arrow assignment_target
+statement_id_tail -> plus concat_tail semicolon
+statement_id_tail -> semicolon
+
+statement_string_tail -> arrow assignment_target
+statement_string_tail -> semicolon
+
+/* ID list continuation */
+id_list_tail -> comma id id_list_tail
+id_list_tail -> epsilon
+
+/* Assignment target */
+assignment_target -> id assignment_target_tail semicolon
+assignment_target_tail -> colon type
+assignment_target_tail -> epsilon
+
+/* Expression statements */
+split_expr_stmt -> split id arrow id semicolon
+join_expr_stmt -> join id with id arrow id semicolon
+replace_expr_stmt -> replace STRING with STRING in id semicolon
+rotate_expr_stmt -> rotate id with NUMBER positions direction semicolon
+capitalize_stmt -> capitalize id semicolon
+upper_stmt -> upper id semicolon
+lower_stmt -> lower id semicolon
+
+/* Control flow */
+if_statement -> if id if_condition STRING lbrace statement_list rbrace
+
+if_condition -> ends with
+if_condition -> contains
+
+/* Types and values */
+type -> string
+type -> list
+
+direction -> left
+direction -> right
+
+/* ID base (terminal wrapper) */
+id -> IDENTIFIER

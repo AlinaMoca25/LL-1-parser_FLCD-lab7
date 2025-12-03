@@ -1,6 +1,3 @@
-// main_tree_parser.c
-// Main program for Requirement 2: Parse tree generation from PIF
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

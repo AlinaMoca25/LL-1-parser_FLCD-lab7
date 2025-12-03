@@ -1,6 +1,3 @@
-// parse_tree.c
-// Parse tree implementation for Requirement 2
-
 #include "parse_tree.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +26,6 @@ ParseTreeNode *tree_node_create(const char *symbol, int is_terminal) {
 void tree_node_free(ParseTreeNode *node) {
     if (!node) return;
     
-    // Free children recursively
     ParseTreeNode *child = node->child;
     while (child) {
         ParseTreeNode *next = child->sibling;
@@ -37,7 +33,6 @@ void tree_node_free(ParseTreeNode *node) {
         child = next;
     }
     
-    // Free node data
     free(node->symbol);
     if (node->lexeme) free(node->lexeme);
     free(node);
@@ -51,7 +46,6 @@ void tree_node_add_child(ParseTreeNode *parent, ParseTreeNode *child) {
     if (!parent->child) {
         parent->child = child;
     } else {
-        // Add as rightmost sibling
         ParseTreeNode *sibling = parent->child;
         while (sibling->sibling) {
             sibling = sibling->sibling;
@@ -81,7 +75,6 @@ void tree_print_table(ParseTreeNode *root, FILE *out) {
     int node_count = 0;
     collect_nodes(root, nodes, &node_count, 10000);
     
-    // Print header
     fprintf(out, "Index | Symbol | Type | Production | Father | Sibling | Lexeme | ST Location\n");
     fprintf(out, "------|--------|------|------------|--------|---------|--------|------------\n");
     

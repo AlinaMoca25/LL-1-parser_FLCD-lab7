@@ -9,7 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 
-// Tree-building configuration extends base Configuration
+// tree-building configuration extends base configuration
 typedef struct {
     StrList alpha;      // input stack (w$)
     StrList beta;       // working stack (S$)
@@ -88,11 +88,10 @@ static void tree_config_init(TreeConfiguration *config, PIFEntry *pif_entries, i
     config->root = NULL;
     if (nonterms->count > 0) {
         config->root = tree_node_create(nonterms->items[0], 0);
-        config->root->production_index = -1; // Will be set when first production is applied
+        config->root->production_index = -1;
         config->node_stack[config->node_stack_count++] = config->root;
     }
     
-    // Add NULL for $ marker
     config->node_stack[config->node_stack_count++] = NULL;
     
     // Store PIF info
@@ -101,13 +100,11 @@ static void tree_config_init(TreeConfiguration *config, PIFEntry *pif_entries, i
     config->pif_index = 0;
 }
 
-// Free tree-building configuration
 static void tree_config_free(TreeConfiguration *config) {
     sl_free(&config->alpha);
     sl_free(&config->beta);
     sl_free(&config->pi);
     
-    // Free node stack (but not the nodes themselves - they're in the tree)
     free(config->node_stack);
 }
 
@@ -165,7 +162,6 @@ static void push_node_head(TreeConfiguration *config, ParseTreeNode *node) {
     config->node_stack_count++;
 }
 
-// Look up table entry
 static int table_lookup(int **table, StrList *nonterms, StrList *terms, const char *stack_top, const char *input_head) {
     int row = -1;
     int col = sl_index(terms, input_head);
@@ -195,35 +191,29 @@ static int tree_action_push(TreeConfiguration *config, int **table, StrList *non
     
     int table_val = table_lookup(table, nonterms, terms, A, u);
     if (table_val < 0) {
-        // No valid production - this should not happen if parse table is correct
         return 0;
     }
     if (table_val >= prods->count) {
-        // Invalid production index
         return 0;
     }
     
     Production *prod = &prods->items[table_val];
     
-    // Safety check: if production RHS is the same as LHS, we have a direct left recursion (shouldn't happen in LL(1))
-    // This would cause infinite expansion
+    // if production RHS is the same as LHS, we have a direct left recursion - not allowed in LL(1)
     if (prod->rhs_len == 1 && strcmp(prod->rhs[0], A) == 0) {
-        return 0; // Direct left recursion detected
-    }
-    
-    // Get the nonterminal node from stack
-    // Note: A should be a nonterminal, so A_node should not be NULL
-    ParseTreeNode *A_node = pop_node_head(config);
-    if (!A_node) {
-        // Node stack is out of sync with beta stack - this is an error
-        // This can happen if we have a mismatch between node_stack and beta
         return 0;
     }
     
-    // Set production index
+    // Get the nonterminal node from stack
+    ParseTreeNode *A_node = pop_node_head(config);
+    if (!A_node) {
+        return 0;
+    }
+    
+    // set production index
     A_node->production_index = table_val;
     
-    // Pop A from beta
+    // pop A from beta
     pop_head(&config->beta);
     
     // Create child nodes for RHS symbols (in reverse order for stack)

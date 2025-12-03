@@ -1,6 +1,3 @@
-// parser_tree.h
-// Parser with parse tree building for Requirement 2
-
 #ifndef PARSER_TREE_H
 #define PARSER_TREE_H
 

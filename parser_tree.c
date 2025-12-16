@@ -47,13 +47,36 @@ static StrList split_input_from_pif(PIFEntry *pif_entries, int pif_count, StrLis
     sl_init(&tokens);
     
     for (int i = 0; i < pif_count; i++) {
-        // Map lexeme to terminal name
+        // 1. Try exact keyword match first (e.g., "bind", "apply", "+", "->")
         const char *terminal = lexeme_to_terminal(pif_entries[i].lexeme);
+        
         if (terminal) {
             add_token_allow_dup(&tokens, terminal);
         } else {
-            // Fallback: use lexeme as-is
-            add_token_allow_dup(&tokens, pif_entries[i].lexeme);
+            // 2. If no keyword match, check for literals based on structure
+            const char *lexeme = pif_entries[i].lexeme;
+            
+            if (lexeme[0] == '"') {
+                // It starts with a quote -> It is a STRING literal
+                add_token_allow_dup(&tokens, "STRING");
+            } 
+            else if (isdigit(lexeme[0])) {
+                // It starts with a digit -> It is a NUMBER
+                add_token_allow_dup(&tokens, "NUMBER");
+            } 
+            else if (strcmp(lexeme, "true") == 0 || strcmp(lexeme, "false") == 0) {
+                // It is a boolean -> BOOL_LIT
+                add_token_allow_dup(&tokens, "BOOL_LIT");
+            }
+            else if (pif_entries[i].bucket != -1) {
+                // If it has a symbol table entry (bucket != -1) and isn't a keyword -> IDENTIFIER
+                add_token_allow_dup(&tokens, "IDENTIFIER");
+            }
+            else {
+                // Fallback: This will likely cause a parse error, but it's the last resort
+                // (e.g. for terminals like "NL" if they aren't caught by lexeme_to_terminal)
+                add_token_allow_dup(&tokens, lexeme);
+            }
         }
     }
     

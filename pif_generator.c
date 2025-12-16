@@ -9,11 +9,6 @@
 #include <string.h>
 #include <ctype.h>
 
-// Provide a safe strdup replacement for portability
-static char *__pif_strdup(const char *s) { if(!s) return NULL; size_t n = strlen(s) + 1; char *r = malloc(n); if(r) memcpy(r, s, n); return r; }
-#ifndef strdup
-#define strdup __pif_strdup
-#endif
 
 #define UNUSED_LOC -1
 

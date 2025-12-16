@@ -1,0 +1,5 @@
+Sequence not accepted
+Syntax error at: Parse error: no action for stack='program_tail', input='PIPELINE' (table_val=-1)
+Beta stack: program_tail $
+Alpha input: PIPELINE KEEP LPAREN IDENTIFIER LAMBDA IDENTIFIER MOD NUMBER EQ NUMBER RPAREN $
+

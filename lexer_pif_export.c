@@ -119,7 +119,8 @@ const char *lexeme_to_terminal(const char *lexeme) {
     // Range literal format: digits..digits (merged by PIF generator)
     if (strstr(lexeme, "..") != NULL) {
         int ok = 1; // ensure both sides are numbers
-        char *s = strdup(lexeme);
+        char *s = malloc(strlen(lexeme) + 1);
+        strcpy(s, lexeme);
         char *dot = strstr(s, "..");
         if (!dot) { free(s); }
         else {

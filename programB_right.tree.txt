@@ -1,0 +1,2 @@
+Sequence not accepted
+Syntax error at: Parse error: no action for stack='program', input='Token:' (table_val=-1)

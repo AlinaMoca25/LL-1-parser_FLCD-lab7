@@ -56,6 +56,10 @@ int main(int argc, char **argv){
     print_entry(table, &nonterms, &terms, "program_tail", "PIPELINE");
     print_entry(table, &nonterms, &terms, "stmt", "PIPELINE");
 
+    print_entry(table, &nonterms, &terms, "primary", "IDENTIFIER");
+    print_entry(table, &nonterms, &terms, "id", "LAMBDA");
+    print_entry(table, &nonterms, &terms, "lambda", "IDENTIFIER");
+
         // Print production p28 for inspection
         int p = 28;
         if(p >= 0 && p < prods.count){
@@ -63,6 +67,18 @@ int main(int argc, char **argv){
             printf("prod p%d: %s ->", p, nonterms.items[pr->lhs]);
             for(int k=0;k<pr->rhs_len;k++) printf(" %s", pr->rhs[k]);
             printf("\n");
+        }
+
+        int pt_idx = sl_index(&nonterms, "program_tail");
+        if(pt_idx != -1){
+            printf("Productions for program_tail:\n");
+            for(int i=0;i<prods.count;i++){
+                if(prods.items[i].lhs == pt_idx){
+                    printf(" p%d: program_tail ->", i);
+                    for(int k=0;k<prods.items[i].rhs_len;k++) printf(" %s", prods.items[i].rhs[k]);
+                    printf("\n");
+                }
+            }
         }
 
     // cleanup

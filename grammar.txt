@@ -5,7 +5,8 @@
 
 # Program
 program -> stmt program_tail
-program_tail -> NL stmt program_tail | NL program_tail | epsilon
+program_tail -> NL opt_stmt program_tail | epsilon
+opt_stmt -> stmt | epsilon
 
 # Statements
 stmt -> bind_stmt | set_stmt | when_stmt | each_stmt | def_stmt | yield_stmt | expr
@@ -19,8 +20,8 @@ def_stmt -> DEF id LPAREN param_list_opt RPAREN DO block END
 yield_stmt -> YIELD expr
 
 # Block
-block -> stmt block_tail
-block_tail -> NL stmt block_tail | NL block_tail | epsilon
+block -> NL block | stmt block_tail
+block_tail -> NL opt_stmt block_tail | epsilon
 
 # Parameter list
 param_list_opt -> id param_list_tail | epsilon
@@ -35,6 +36,8 @@ pipe_expr_tail -> PIPELINE stage pipe_expr_tail | epsilon
 stage -> call | stage_keyword
 
 stage_keyword -> APPLY LPAREN lambda RPAREN | KEEP LPAREN lambda RPAREN | ORDER LPAREN order_kw RPAREN | DEDUPE LPAREN RPAREN | TAKE LPAREN expr RPAREN | SKIP LPAREN expr RPAREN | CONCAT LPAREN expr RPAREN | JOINSTR LPAREN expr RPAREN | TOTAL LPAREN RPAREN | COUNT LPAREN RPAREN | AVG LPAREN RPAREN
+
+lambda -> id LAMBDA expr
 
 order_kw -> ASC | DESC
 
@@ -61,19 +64,17 @@ unary -> NOT unary | MINUS unary | power
 power -> primary power_tail
 power_tail -> POW unary power_tail | epsilon
 
-primary -> RANGE | number primary_tail | string | bool | NONE | id | LPAREN expr RPAREN | call | list_lit | lambda
+primary -> RANGE | number primary_tail | string | bool | NONE | LPAREN expr RPAREN | list_lit | IDENTIFIER primary_after_ident | TOTAL primary_after_ident | COUNT primary_after_ident | AVG primary_after_ident | APPLY primary_after_ident | KEEP primary_after_ident | ORDER primary_after_ident | DEDUPE primary_after_ident | TAKE primary_after_ident | SKIP primary_after_ident | CONCAT primary_after_ident | JOINSTR primary_after_ident
+
+primary_after_ident -> LPAREN arg_list_opt RPAREN | LAMBDA expr | epsilon
 
 primary_tail -> RANGE_DOT expr | RANGE_DOT_LT expr | epsilon
 
 # Range literal terminal (merged by PIF generator)
 range -> RANGE
 
-call -> id LPAREN arg_list_opt RPAREN
-
 arg_list_opt -> expr arg_list_tail | epsilon
 arg_list_tail -> COMMA expr arg_list_tail | epsilon
-
-lambda -> id LAMBDA expr
 
 list_lit -> LBRACKET expr_list_opt RBRACKET
 
@@ -82,7 +83,7 @@ expr_list_tail -> COMMA expr expr_list_tail | epsilon
 
 
 # Terminals
-id -> IDENTIFIER
+id -> IDENTIFIER | TOTAL | COUNT | AVG | APPLY | KEEP | ORDER | DEDUPE | TAKE | SKIP | CONCAT | JOINSTR
 number -> NUMBER
 string -> STRING
 bool -> BOOL_LIT

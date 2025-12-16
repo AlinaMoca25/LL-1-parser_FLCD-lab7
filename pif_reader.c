@@ -26,18 +26,39 @@ int read_pif_from_file(const char *filename, PIFEntry **entries, int *count) {
         char lexeme[256];
         int bucket = -1, pos = -1;
         
-        if (sscanf(line, "%255s %d,%d", lexeme, &bucket, &pos) == 3) {
-            // Format: lexeme bucket,pos
-        } else if (sscanf(line, "%255s %d", lexeme, &bucket) == 2 && bucket == -1) {
-            // Format: lexeme -1
-            pos = -1;
+        // Manual parsing to allow quoted lexemes with spaces
+        char *p = line;
+        while (*p && isspace((unsigned char)*p)) p++;
+        if (*p == '\"') {
+            // quoted lexeme
+            char *start = p;
+            p++; // skip opening quote
+            while (*p && *p != '\"') p++;
+            if (*p == '\"') p++; // include closing quote
+            int len = p - start;
+            if (len > 255) len = 255;
+            strncpy(lexeme, start, len);
+            lexeme[len] = '\0';
+            // skip spaces
+            while (*p && isspace((unsigned char)*p)) p++;
+            // try to parse bucket,pos
+            if (sscanf(p, "%d,%d", &bucket, &pos) != 2) {
+                bucket = -1; pos = -1;
+            }
         } else {
-            // Try just lexeme
-            if (sscanf(line, "%255s", lexeme) == 1) {
-                bucket = -1;
+            if (sscanf(line, "%255s %d,%d", lexeme, &bucket, &pos) == 3) {
+                // Format: lexeme bucket,pos
+            } else if (sscanf(line, "%255s %d", lexeme, &bucket) == 2 && bucket == -1) {
+                // Format: lexeme -1
                 pos = -1;
             } else {
-                continue; // Skip malformed lines
+                // Try just lexeme
+                if (sscanf(line, "%255s", lexeme) == 1) {
+                    bucket = -1;
+                    pos = -1;
+                } else {
+                    continue; // Skip malformed lines
+                }
             }
         }
         
@@ -82,17 +103,38 @@ int read_pif_from_string(const char *pif_str, PIFEntry **entries, int *count) {
         char lexeme[256];
         int bucket = -1, pos = -1;
         
-        if (sscanf(line, "%255s %d,%d", lexeme, &bucket, &pos) == 3) {
-            // Format: lexeme bucket,pos
-        } else if (sscanf(line, "%255s %d", lexeme, &bucket) == 2 && bucket == -1) {
-            // Format: lexeme -1
-            pos = -1;
+        // Manual parsing to allow quoted lexemes with spaces
+        char *p = line;
+        while (*p && isspace((unsigned char)*p)) p++;
+        if (*p == '\"') {
+            // quoted lexeme
+            char *start = p;
+            p++; // skip opening quote
+            while (*p && *p != '\"') p++;
+            if (*p == '\"') p++; // include closing quote
+            int len = p - start;
+            if (len > 255) len = 255;
+            strncpy(lexeme, start, len);
+            lexeme[len] = '\0';
+            // skip spaces
+            while (*p && isspace((unsigned char)*p)) p++;
+            // try to parse bucket,pos
+            if (sscanf(p, "%d,%d", &bucket, &pos) != 2) {
+                bucket = -1; pos = -1;
+            }
         } else {
-            if (sscanf(line, "%255s", lexeme) == 1) {
-                bucket = -1;
+            if (sscanf(line, "%255s %d,%d", lexeme, &bucket, &pos) == 3) {
+                // Format: lexeme bucket,pos
+            } else if (sscanf(line, "%255s %d", lexeme, &bucket) == 2 && bucket == -1) {
+                // Format: lexeme -1
                 pos = -1;
             } else {
-                continue;
+                if (sscanf(line, "%255s", lexeme) == 1) {
+                    bucket = -1;
+                    pos = -1;
+                } else {
+                    continue;
+                }
             }
         }
         

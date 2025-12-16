@@ -50,10 +50,10 @@ static StrList split_input_from_pif(PIFEntry *pif_entries, int pif_count, StrLis
         // Map lexeme to terminal name
         const char *terminal = lexeme_to_terminal(pif_entries[i].lexeme);
         if (terminal) {
-            sl_add(&tokens, terminal);
+            add_token_allow_dup(&tokens, terminal);
         } else {
             // Fallback: use lexeme as-is
-            sl_add(&tokens, pif_entries[i].lexeme);
+            add_token_allow_dup(&tokens, pif_entries[i].lexeme);
         }
     }
     
@@ -371,6 +371,15 @@ ParseTreeOutput ll1_parse_with_tree(const char *input, int **table,
         }
         
         int table_val = table_lookup(table, nonterms, terms, beta_head, alpha_head);
+
+        // Debug: print each parsing step to trace exactly what happens
+        fprintf(stderr, "STEP %d: beta_head=%s, alpha_head=%s, table_val=%d\n", loop_count, beta_head ? beta_head : "NULL", alpha_head ? alpha_head : "NULL", table_val);
+        // Print the full alpha input stack for visibility
+        fprintf(stderr, "  ALPHA:" );
+        for (int ai = 0; ai < config.alpha.count; ai++) {
+            fprintf(stderr, " %s", config.alpha.items[ai]);
+        }
+        fprintf(stderr, "\n");
         
         if (table_val >= 0) {
             // Production: Push action
@@ -431,14 +440,28 @@ ParseTreeOutput ll1_parse_with_tree(const char *input, int **table,
             s = "err";
             // Create detailed error message showing what was expected vs what was found
             if (output.error_location) free(output.error_location);
-            output.error_location = malloc(512);
+            // Build a larger error report including current alpha and beta stacks
+            int buf_size = 4096;
+            output.error_location = malloc(buf_size);
             if (beta_head && alpha_head) {
-                sprintf(output.error_location, "Parse error: no action for stack='%s', input='%s' (table_val=%d)", 
-                        beta_head, alpha_head, table_val);
+                snprintf(output.error_location, buf_size, "Parse error: no action for stack='%s', input='%s' (table_val=%d)\n", beta_head, alpha_head, table_val);
             } else {
-                sprintf(output.error_location, "Parse error: stack=%s, input=%s", 
-                        beta_head ? beta_head : "NULL", alpha_head ? alpha_head : "NULL");
+                snprintf(output.error_location, buf_size, "Parse error: stack=%s, input=%s\n", beta_head ? beta_head : "NULL", alpha_head ? alpha_head : "NULL");
             }
+            // Append beta stack contents
+            strcat(output.error_location, "Beta stack: ");
+            for (int i = 0; i < config.beta.count; i++) {
+                strcat(output.error_location, config.beta.items[i]);
+                if (i != config.beta.count-1) strcat(output.error_location, " ");
+            }
+            strcat(output.error_location, "\nAlpha input: ");
+            for (int i = 0; i < config.alpha.count; i++) {
+                strcat(output.error_location, config.alpha.items[i]);
+                if (i != config.alpha.count-1) strcat(output.error_location, " ");
+            }
+            strcat(output.error_location, "\n");
+            // Also print to stderr for immediate visibility
+            fprintf(stderr, "%s", output.error_location);
         }
     }
     

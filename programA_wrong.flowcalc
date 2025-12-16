@@ -1,4 +1,4 @@
-bind 2x := [1, 2, 3]                  
+bind x := [1, 2, 3]                  
 set y := 0  
 bind xs := [1, 2, 3];   
 bind r := xs |> map(x => x * 2)

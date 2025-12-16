@@ -2180,6 +2180,10 @@ int main(int argc, char **argv) {
         return 0;
     } else {
         printf("\n===== Parsing Failed =====\n");
+        /* Even on parse failure, print symbol table and PIF for debugging */
+        extern void dump_pif(void);
+        st_dump(&ST);
+        dump_pif();
         st_free(&ST);
         return 1;
     }

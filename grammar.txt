@@ -5,7 +5,7 @@
 
 # Program
 program -> stmt program_tail
-program_tail -> NL stmt program_tail | epsilon
+program_tail -> NL stmt program_tail | NL program_tail | epsilon
 
 # Statements
 stmt -> bind_stmt | set_stmt | when_stmt | each_stmt | def_stmt | yield_stmt | expr
@@ -20,7 +20,7 @@ yield_stmt -> YIELD expr
 
 # Block
 block -> stmt block_tail
-block_tail -> NL stmt block_tail | epsilon
+block_tail -> NL stmt block_tail | NL block_tail | epsilon
 
 # Parameter list
 param_list_opt -> id param_list_tail | epsilon
@@ -61,7 +61,12 @@ unary -> NOT unary | MINUS unary | power
 power -> primary power_tail
 power_tail -> POW unary power_tail | epsilon
 
-primary -> number | string | bool | NONE | id | LPAREN expr RPAREN | call | list_lit | range_lit | lambda
+primary -> RANGE | number primary_tail | string | bool | NONE | id | LPAREN expr RPAREN | call | list_lit | lambda
+
+primary_tail -> RANGE_DOT expr | RANGE_DOT_LT expr | epsilon
+
+# Range literal terminal (merged by PIF generator)
+range -> RANGE
 
 call -> id LPAREN arg_list_opt RPAREN
 
@@ -75,7 +80,6 @@ list_lit -> LBRACKET expr_list_opt RBRACKET
 expr_list_opt -> expr expr_list_tail | epsilon
 expr_list_tail -> COMMA expr expr_list_tail | epsilon
 
-range_lit -> expr RANGE_DOT expr | expr RANGE_DOT_LT expr
 
 # Terminals
 id -> IDENTIFIER

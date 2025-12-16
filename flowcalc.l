@@ -2,9 +2,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <io.h>
+#endif
 #include "flowcalc.tab.h"
 #include "st.h"
 #include "dfa.h"
+
+/* Ensure fileno prototype is visible */
+extern int fileno(FILE *);
+
+
+/* strdup can be missing on some Windows toolchains. Provide a fallback if needed. */
+/* Ensure strdup prototype is visible to avoid implicit declaration */
+extern char *strdup(const char *);
+
+/* Map fileno to _fileno on Windows if necessary */
+#if defined(_WIN32) && !defined(fileno)
+#define fileno _fileno
+#endif
+
+#ifndef _MSC_VER
+/* For non-MSVC compilers, strdup is usually available via string.h */
+#else
+/* For MSVC or other Windows compilers, define a local strdup and alias it. */
+static char *strdup_local(const char *s) {
+    if (!s) return NULL;
+    size_t l = strlen(s) + 1;
+    char *d = (char*)malloc(l);
+    if (d) memcpy(d, s, l);
+    return d;
+}
+#define strdup strdup_local
+#endif
 
 #define UNUSED_LOC -1
 typedef struct { char lexeme[256]; int bucket; int pos; } PIFEntry;

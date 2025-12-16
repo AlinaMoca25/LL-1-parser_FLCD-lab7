@@ -4,6 +4,7 @@
 #include "lexer_pif_export.h"
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 // Case-insensitive string comparison (Windows compatibility)
 #ifdef _WIN32
@@ -33,6 +34,20 @@ const char *lexeme_to_terminal(const char *lexeme) {
     if (strcasecmp(lexeme, "not") == 0) return "NOT";
     if (strcasecmp(lexeme, "asc") == 0) return "ASC";
     if (strcasecmp(lexeme, "desc") == 0) return "DESC";
+
+    // Accept common token-label synonyms produced by some lexers (e.g., 'lparen','colon')
+    if (strcasecmp(lexeme, "lparen") == 0) return "LPAREN";
+    if (strcasecmp(lexeme, "rparen") == 0) return "RPAREN";
+    if (strcasecmp(lexeme, "lbracket") == 0) return "LBRACKET";
+    if (strcasecmp(lexeme, "rbracket") == 0) return "RBRACKET";
+    if (strcasecmp(lexeme, "colon") == 0) return "ASSIGN"; /* 'colon' often represents ':=' */
+    if (strcasecmp(lexeme, "arrow") == 0) return "LAMBDA"; /* 'arrow' -> '->' */
+    if (strcasecmp(lexeme, "plus") == 0) return "PLUS";
+    if (strcasecmp(lexeme, "minus") == 0) return "MINUS";
+    if (strcasecmp(lexeme, "mul") == 0) return "MUL";
+    if (strcasecmp(lexeme, "div") == 0) return "DIV";
+    if (strcasecmp(lexeme, "percent") == 0) return "MOD";
+    if (strcasecmp(lexeme, "comma") == 0) return "COMMA";
     
     // Stage keywords
     if (strcasecmp(lexeme, "apply") == 0) return "APPLY";
@@ -81,6 +96,8 @@ const char *lexeme_to_terminal(const char *lexeme) {
     
     // Newline
     if (strcmp(lexeme, "\n") == 0 || strcmp(lexeme, "\r\n") == 0) return "NL";
+    // Also accept the literal token name "NL" (used by PIF generator)
+    if (strcasecmp(lexeme, "NL") == 0) return "NL";
     
     // String literals (quoted)
     if (lexeme[0] == '"' && lexeme[strlen(lexeme)-1] == '"') return "STRING";
@@ -98,6 +115,24 @@ const char *lexeme_to_terminal(const char *lexeme) {
         }
     }
     if (is_number && strlen(lexeme) > 0) return "NUMBER";
+
+    // Range literal format: digits..digits (merged by PIF generator)
+    if (strstr(lexeme, "..") != NULL) {
+        int ok = 1; // ensure both sides are numbers
+        char *s = strdup(lexeme);
+        char *dot = strstr(s, "..");
+        if (!dot) { free(s); }
+        else {
+            *dot = '\0';
+            char *left = s;
+            char *right = dot + 2;
+            // validate left
+            for (int i = 0; left[i]; i++) if (!isdigit((unsigned char)left[i]) && left[i] != '.') ok = 0;
+            for (int i = 0; right[i]; i++) if (!isdigit((unsigned char)right[i]) && right[i] != '.') ok = 0;
+            free(s);
+            if (ok) return "RANGE";
+        }
+    }
     
     // Identifiers (everything else that's alphanumeric/underscore)
     int is_identifier = 1;

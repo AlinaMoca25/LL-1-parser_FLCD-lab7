@@ -71,8 +71,10 @@ int **build_parse_table(StrList *nonterms, StrList *terms, ProdList *prods, Firs
             for(int t=0;t<fA->count;t++){
                 int col = sl_index(terms, fA->items[t]);
                 if(col==-1) continue;
-                // Always set epsilon production entries
-                table[prod->lhs][col] = p;
+                // Only set epsilon production entries if not already set
+                if(table[prod->lhs][col] == PT_ERROR){
+                    table[prod->lhs][col] = p;
+                }
             }
             continue; // Skip to next production
         }
@@ -116,13 +118,14 @@ int **build_parse_table(StrList *nonterms, StrList *terms, ProdList *prods, Firs
         }
         if(produces_epsilon){
             // for each b in FOLLOW(A) set table[A,b] = prod
-            // Epsilon productions should always be set (even if there's a conflict)
             StrList *fA = &follow->sets[prod->lhs];
             for(int t=0;t<fA->count;t++){
                 int col = sl_index(terms, fA->items[t]);
                 if(col==-1) continue;
-                // Always set epsilon production entries (don't check PT_ERROR)
-                table[prod->lhs][col] = p;
+                // Only set epsilon production entries if not already set
+                if(table[prod->lhs][col] == PT_ERROR){
+                    table[prod->lhs][col] = p;
+                }
             }
         }
     }

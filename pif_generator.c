@@ -15,6 +15,13 @@
 static int needs_symbol_table(const char *lexeme) {
     if (!lexeme || strlen(lexeme) == 0) return 0;
     
+    // If lexeme looks like a canonical token name (all uppercase letters/underscores), don't add to ST
+    int all_upper = 1;
+    for (int i = 0; lexeme[i]; i++) {
+        if (!(isupper((unsigned char)lexeme[i]) || lexeme[i] == '_')) { all_upper = 0; break; }
+    }
+    if (all_upper) return 0;
+
     // Check if it's a keyword or operator (these don't go in ST)
     const char *terminal = lexeme_to_terminal(lexeme);
     if (terminal && strcmp(terminal, lexeme) != 0) {
@@ -122,45 +129,104 @@ int generate_pif_from_tokens(const char **tokens, int token_count,
 int generate_pif_from_string(const char *input, PIFEntry **pif_entries, int *pif_count,
                               SymbolTable *st) {
     if (!input || !pif_entries || !pif_count) return -1;
-    
-    // Simple tokenizer - split by whitespace
-    // In real usage, this would use the lexer
-    const char *tokens[1024];
+
+    // Improved tokenizer: splits identifiers, numbers, strings, and operators
+    const char *tokens[4096];
     int token_count = 0;
-    
+
     const char *p = input;
-    char token[256];
-    int token_len = 0;
-    
-    while (*p && token_count < 1024) {
+
+    while (*p && token_count < 4096) {
+        // Whitespace handling: treat newlines as explicit NL tokens (grammar expects NL between statements)
         if (isspace((unsigned char)*p)) {
-            if (token_len > 0) {
-                token[token_len] = '\0';
-                tokens[token_count] = strdup(token);
-                token_count++;
-                token_len = 0;
-            }
-        } else {
-            if (token_len < 255) {
-                token[token_len++] = *p;
-            }
+            if (*p == '\n') { tokens[token_count++] = strdup("NL"); p++; continue; }
+            if (*p == '\r') { if (p[1] == '\n') { tokens[token_count++] = strdup("NL"); p += 2; continue; } p++; continue; }
+            p++; continue;
         }
+
+        // Identifiers / keywords (letters or underscore)
+        if (isalpha((unsigned char)*p) || *p == '_') {
+            char buf[256]; int n = 0;
+            while ((*p) && (isalnum((unsigned char)*p) || *p == '_') && n < (int)sizeof(buf)-1) {
+                buf[n++] = *p++; }
+            buf[n] = '\0'; tokens[token_count++] = strdup(buf); continue;
+        }
+
+        // Numbers: digits with optional single dot (decimal). Stop at '..' sequence (range)
+        if (isdigit((unsigned char)*p)) {
+            char buf[256]; int n = 0; int has_dot = 0;
+            while (*p && n < (int)sizeof(buf)-1) {
+                if (*p == '.') {
+                    if (p[1] == '.') break; // range operator starts here
+                    if (has_dot) break; // second dot -> stop
+                    has_dot = 1; buf[n++] = *p++; continue;
+                }
+                if (!isdigit((unsigned char)*p)) break;
+                buf[n++] = *p++;
+            }
+            buf[n] = '\0'; tokens[token_count++] = strdup(buf); continue;
+        }
+
+        // Strings quoted with double quotes
+        if (*p == '"') {
+            char buf[512]; int n = 0; buf[n++] = *p++;
+            while (*p && n < (int)sizeof(buf)-1) {
+                buf[n++] = *p; if (*p == '"') { p++; break; } p++; }
+            buf[n] = '\0'; tokens[token_count++] = strdup(buf); continue;
+        }
+
+        // Multi-char operators
+        if (p[0] == '.' && p[1] == '.' && p[2] == '<') { tokens[token_count++] = strdup("..<"); p += 3; continue; }
+        if (p[0] == ':' && p[1] == '=') { tokens[token_count++] = strdup(":="); p += 2; continue; }
+        if (p[0] == '-' && p[1] == '>') { tokens[token_count++] = strdup("->"); p += 2; continue; }
+        if (p[0] == '|' && p[1] == '>') { tokens[token_count++] = strdup("|>"); p += 2; continue; }
+        if (p[0] == '*' && p[1] == '*') { tokens[token_count++] = strdup("**"); p += 2; continue; }
+        if (p[0] == '>' && p[1] == '=') { tokens[token_count++] = strdup(">="); p += 2; continue; }
+        if (p[0] == '<' && p[1] == '=') { tokens[token_count++] = strdup("<="); p += 2; continue; }
+        if (p[0] == '=' && p[1] == '=') { tokens[token_count++] = strdup("=="); p += 2; continue; }
+        if (p[0] == '!' && p[1] == '=') { tokens[token_count++] = strdup("!="); p += 2; continue; }
+        if (p[0] == '.' && p[1] == '.') { tokens[token_count++] = strdup(".."); p += 2; continue; }
+
+        // Single-char tokens / operators
+        char single[2] = { *p, '\0' };
+        // Accept parentheses, brackets, commas, plus/minus etc.
+        if (strchr("()[],+-*/%<>:=|", *p)) {
+            tokens[token_count++] = strdup(single);
+            p++; continue;
+        }
+
+        // Unknown char: treat it as one-char token and continue
+        tokens[token_count++] = strdup(single);
         p++;
     }
-    
-    if (token_len > 0) {
-        token[token_len] = '\0';
-        tokens[token_count] = strdup(token);
-        token_count++;
+
+    // Post-process tokens: merge NUMBER '..' NUMBER into a single RANGE token (e.g., "1..20")
+    const char *merged[4096]; int mcount = 0;
+    for (int i = 0; i < token_count; ) {
+        if (i + 2 < token_count && tokens[i] && tokens[i+1] && tokens[i+2]) {
+            // check if pattern number .. number
+            int is_num1 = 1, is_num2 = 1;
+            for (int k = 0; tokens[i][k]; k++) if (!isdigit((unsigned char)tokens[i][k]) && tokens[i][k] != '.') { is_num1 = 0; break; }
+            if (strcmp(tokens[i+1], "..") == 0) {
+                for (int k = 0; tokens[i+2][k]; k++) if (!isdigit((unsigned char)tokens[i+2][k]) && tokens[i+2][k] != '.') { is_num2 = 0; break; }
+                if (is_num1 && is_num2) {
+                    char *r = malloc(strlen(tokens[i]) + strlen(tokens[i+2]) + 3);
+                    sprintf(r, "%s..%s", tokens[i], tokens[i+2]);
+                    merged[mcount++] = r;
+                    i += 3; continue;
+                }
+            }
+        }
+        merged[mcount++] = strdup(tokens[i]);
+        i++;
     }
-    
-    int result = generate_pif_from_tokens(tokens, token_count, pif_entries, pif_count, st);
-    
+
+    int result = generate_pif_from_tokens(merged, mcount, pif_entries, pif_count, st);
+
     // Free duplicated tokens
-    for (int i = 0; i < token_count; i++) {
-        free((void*)tokens[i]);
-    }
-    
+    for (int i = 0; i < token_count; i++) free((void*)tokens[i]);
+    for (int i = 0; i < mcount; i++) free((void*)merged[i]);
+
     return result;
 }
 

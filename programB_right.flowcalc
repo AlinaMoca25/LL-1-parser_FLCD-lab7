@@ -1,0 +1,16 @@
+bind xs := 1..20
+bind evens := xs |> keep(n -> n % 2 == 0)
+bind squares := evens |> apply(n -> n * n) |> take(5)
+
+when avg() > 50 do
+  set squares = squares |> concat([100])
+otherwise do
+  set squares = squares |> concat([0])
+end
+
+bind total := 0
+each v in squares do
+  set total = total + v
+end
+
+bind out := squares |> joinstr(", ")

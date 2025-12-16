@@ -1,0 +1,9 @@
+bind 2x := [1, 2, 3]                  
+set y := 0  
+bind xs := [1, 2, 3];   
+bind r := xs |> map(x => x * 2)
+bind ok := true && false
+when count() > 1                      
+  set r = r |> take(2)
+otherwise do
+  set r = r |> concat([9])

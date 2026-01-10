@@ -1,0 +1,5 @@
+Sequence not accepted
+Syntax error at: Parse error: no action for stack='stmt', input='PIPELINE' (table_val=-1)
+Beta stack: stmt program_tail $
+Alpha input: PIPELINE KEEP LPAREN LAMBDA MOD NUMBER EQ RPAREN APPLY MUL TAKE WHEN AVG GT DO SET UPDATE CONCAT LBRACKET RBRACKET OTHERWISE END TOTAL EACH IN PLUS JOINSTR ", $
+

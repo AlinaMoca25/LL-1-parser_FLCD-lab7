@@ -255,6 +255,13 @@ ParseOutput ll1_parse(const char *input, int **table, StrList *nonterms, StrList
             // Error
             go = 0;
             s = "err";
+            // Print stacks for debugging
+            fprintf(stderr, "Parse error: no action for stack='%s', input='%s'\n", beta_head ? beta_head : "NULL", alpha_head ? alpha_head : "NULL");
+            fprintf(stderr, "Beta stack: ");
+            for (int i = 0; i < config.beta.count; i++) fprintf(stderr, "%s ", config.beta.items[i]);
+            fprintf(stderr, "\nAlpha input: ");
+            for (int i = 0; i < config.alpha.count; i++) fprintf(stderr, "%s ", config.alpha.items[i]);
+            fprintf(stderr, "\n");
         }
     }
     

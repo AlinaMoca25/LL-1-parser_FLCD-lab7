@@ -1,0 +1,6 @@
+~~~~ Program Internal Form (PIF) ~~~~
+bind             -1
+x                1,0
+:=               -1
+10               2,0
+~~~~~~~~ End PIF ~~~~~~~~

@@ -1,0 +1,36 @@
+Sequence accepted
+
+Parse Tree (Father/Sibling Relations):
+========================================
+
+Index | Symbol | Type | Production | Father | Sibling | Lexeme | ST Location
+------|--------|------|------------|--------|---------|--------|------------
+    0 | program | NTERM |          0 |     -1 |      -1 | -      | -
+    1 | stmt   | NTERM |          3 |      0 |      28 | -      | -
+    2 | bind_stmt | NTERM |         10 |      1 |      -1 | -      | -
+    3 | BIND   | TERM |         -1 |      2 |       4 | bind   | -
+    4 | id     | NTERM |         98 |      2 |       6 | -      | -
+    5 | IDENTIFIER | TERM |         -1 |      4 |      -1 | x      | 1,0
+    6 | ASSIGN | TERM |         -1 |      2 |       7 | :=     | -
+    7 | expr   | NTERM |         25 |      2 |      -1 | -      | -
+    8 | pipe_expr | NTERM |         26 |      7 |      -1 | -      | -
+    9 | logic_or | NTERM |         44 |      8 |      27 | -      | -
+   10 | logic_and | NTERM |         47 |      9 |      26 | -      | -
+   11 | equality | NTERM |         50 |     10 |      25 | -      | -
+   12 | relation | NTERM |         54 |     11 |      24 | -      | -
+   13 | add    | NTERM |         60 |     12 |      23 | -      | -
+   14 | mul    | NTERM |         64 |     13 |      22 | -      | -
+   15 | unary  | NTERM |         71 |     14 |      21 | -      | -
+   16 | power  | NTERM |         72 |     15 |      -1 | -      | -
+   17 | primary | NTERM |         75 |     16 |      20 | -      | -
+   18 | number | NTERM |         99 |     17 |      -1 | -      | -
+   19 | NUMBER | TERM |         -1 |     18 |      -1 | 10     | 2,0
+   20 | power_tail | NTERM |         74 |     16 |      -1 | -      | -
+   21 | mul_tail | NTERM |         68 |     14 |      -1 | -      | -
+   22 | add_tail | NTERM |         63 |     13 |      -1 | -      | -
+   23 | relation_tail | NTERM |         59 |     12 |      -1 | -      | -
+   24 | equality_tail | NTERM |         53 |     11 |      -1 | -      | -
+   25 | logic_and_tail | NTERM |         49 |     10 |      -1 | -      | -
+   26 | logic_or_tail | NTERM |         46 |      9 |      -1 | -      | -
+   27 | pipe_expr_tail | NTERM |         28 |      8 |      -1 | -      | -
+   28 | program_tail | NTERM |          2 |      0 |      -1 | -      | -

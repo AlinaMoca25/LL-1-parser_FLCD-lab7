@@ -1,0 +1,2 @@
+Sequence not accepted
+Syntax error at: Parse error: no action for stack='power_tail', input='IN' (table_val=-1)

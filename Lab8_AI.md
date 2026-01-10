@@ -1,4 +1,6 @@
-Hi! I am building a LL1 parser for a specific mini-DSL. Can you help me check if the code is correct? This is the grammar for the DSL: # FlowCalculation Mini-DSL Grammar (LL(1) format)
+Hi! I am building a LL1 parser for a specific mini-DSL. Can you help me check if the code is correct? This is the grammar for the DSL: 
+
+# FlowCalculation Mini-DSL Grammar (LL(1) format)
 # Start symbol: program
 
 # Productions (left recursion eliminated for LL(1))
@@ -81,14 +83,16 @@ list_lit -> LBRACKET expr_list_opt RBRACKET
 expr_list_opt -> expr expr_list_tail | epsilon
 expr_list_tail -> COMMA expr expr_list_tail | epsilon
 
-
 # Terminals
 id -> IDENTIFIER | TOTAL | COUNT | AVG | APPLY | KEEP | ORDER | DEDUPE | TAKE | SKIP | CONCAT | JOINSTR
 number -> NUMBER
 string -> STRING
 bool -> BOOL_LIT
 
-and this is the main file for the parser: #include <stdio.h>
+
+and this is the main file for the parser: 
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "first_follow.h"
@@ -488,7 +492,12 @@ If you want, next I can:
 
 Just tell me which one you want next 🙂
 
-is this better: # FlowCalculation Mini-DSL Grammar (LL(1) format)
+
+
+
+is this better: 
+
+# FlowCalculation Mini-DSL Grammar (LL(1) format)
 # Start symbol: program
 
 # Productions (left recursion eliminated for LL(1))
@@ -579,12 +588,13 @@ list_lit -> LBRACKET expr_list_opt RBRACKET
 expr_list_opt -> expr expr_list_tail | epsilon
 expr_list_tail -> COMMA expr expr_list_tail | epsilon
 
-
 # Terminals
 id -> IDENTIFIER | TOTAL | COUNT | AVG | APPLY | KEEP | ORDER | DEDUPE | TAKE | SKIP | CONCAT | JOINSTR
 number -> NUMBER
 string -> STRING
 bool -> BOOL_LIT
+
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -749,6 +759,7 @@ int main(int argc, char *argv[]) {
     
     return (parse_output.result == PARSE_ACCEPT) ? 0 : 1;
 }
+
 
 
 Short answer: yes, this is much better, and you fixed the most serious LL(1) issue 👍
